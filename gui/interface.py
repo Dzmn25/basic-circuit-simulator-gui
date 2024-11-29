@@ -23,18 +23,26 @@ class Interface ( wx.Frame ):
 
         bUtils.Add( ( 0, 0), 1, wx.EXPAND, 5 )
 
-        self.rbtnFuente = wx.RadioButton( self, wx.ID_ANY, u"Fuente de Voltaje", wx.DefaultPosition, wx.DefaultSize, 0 )
-        bUtils.Add( self.rbtnFuente, 0, wx.ALL, 5 )
+        self.rbtnVoltaje = wx.RadioButton( self, wx.ID_ANY, u"Voltaje - V", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bUtils.Add( self.rbtnVoltaje, 0, wx.ALL, 5 )
 
-        self.rbtnResistencia = wx.RadioButton( self, wx.ID_ANY, u"Resistencia", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.rbtnResistencia = wx.RadioButton( self, wx.ID_ANY, u"Resistencia - R", wx.DefaultPosition, wx.DefaultSize, 0 )
         bUtils.Add( self.rbtnResistencia, 0, wx.ALL, 5 )
 
-        self.rbtnInductor = wx.RadioButton( self, wx.ID_ANY, u"Inductor", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.rbtnInductor = wx.RadioButton( self, wx.ID_ANY, u"Inductor - L", wx.DefaultPosition, wx.DefaultSize, 0 )
         bUtils.Add( self.rbtnInductor, 0, wx.ALL, 5 )
 
-        self.rbtnCapacitor = wx.RadioButton( self, wx.ID_ANY, u"Capacitor", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.rbtnCapacitor = wx.RadioButton( self, wx.ID_ANY, u"Capacitor - C", wx.DefaultPosition, wx.DefaultSize, 0 )
         bUtils.Add( self.rbtnCapacitor, 0, wx.ALL, 5 )
 
+        self.rbtnTloc = wx.RadioButton( self, wx.ID_ANY, u"TLOC - O", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bUtils.Add( self.rbtnTloc, 0, wx.ALL, 5 )
+
+        self.rbtnTlin = wx.RadioButton( self, wx.ID_ANY, u"TLIN - N", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bUtils.Add( self.rbtnTlin, 0, wx.ALL, 5 )
+
+        self.rbtnTlsc = wx.RadioButton( self, wx.ID_ANY, u"TLSC - G", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bUtils.Add( self.rbtnTlsc, 0, wx.ALL, 5 )
 
         bUtils.Add( ( 0, 0), 1, wx.EXPAND, 5 )
 
@@ -67,7 +75,7 @@ class Interface ( wx.Frame ):
         self.Centre( wx.BOTH )
 
         # Connect Events
-        self.rbtnFuente.Bind( wx.EVT_RADIOBUTTON, self.OnBtnFuente )
+        self.rbtnVoltaje.Bind( wx.EVT_RADIOBUTTON, self.OnBtnVoltaje )
         self.rbtnResistencia.Bind( wx.EVT_RADIOBUTTON, self.OnBtnResistencia )
         self.rbtnInductor.Bind( wx.EVT_RADIOBUTTON, self.OnBtnInductor )
         self.rbtnCapacitor.Bind( wx.EVT_RADIOBUTTON, self.OnBtnCapacitor )
@@ -78,7 +86,7 @@ class Interface ( wx.Frame ):
 
 
     # Virtual event handlers, override them in your derived class
-    def OnBtnFuente( self, event ):
+    def OnBtnVoltaje( self, event ):
         event.Skip()
 
     def OnBtnResistencia( self, event ):

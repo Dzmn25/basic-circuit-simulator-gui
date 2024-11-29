@@ -7,6 +7,7 @@ import schemdraw.elements as elm
 
 NORMAL = "./assets/black.png"
 SELECTED = "./assets/green.png"
+OPTION = "./assets/blue.png"
 
 
 class Data:
@@ -46,6 +47,17 @@ class Board(wx.Panel):
                 j.Destroy()
         self.matrix = []
 
+    def showOptions(self, coords):
+        x, y = coords
+        if x > 0:
+            self.setBitmap(self.matrix[x-1][y], OPTION)
+        if y > 0:
+            self.setBitmap(self.matrix[x][y-1], OPTION)
+        if x < self.columnas:
+            self.setBitmap(self.matrix[x+1][y], OPTION)
+        if y < self.filas:
+            self.setBitmap(self.matrix[x][y+1], OPTION)
+
     def initMatrix(self):
         matrix = []
         for i in range(1, self.filas + 1):
@@ -73,15 +85,22 @@ class Board(wx.Panel):
 
     def openInterface(self, event):
         interface = event.GetEventObject()
-        self.setBitmap(interface, SELECTED)     
+        if self.selected == None:
+            self.setBitmap(interface, SELECTED)     
 
     def closeInterface(self, event):
         interface = event.GetEventObject()
-        self.setBitmap(interface, NORMAL)
+        if self.selected == None:
+            self.setBitmap(interface, NORMAL)
         event.Skip()
 
     def clicInterface(self, event):
-        print("Ay, mi pancita")
+        interface = event.GetEventObject()
+        m_pos = (interface.data.x, interface.data.y)
+        if self.selected == None:
+            self.showOptions(m_pos)
+            self.selected = (m_pos)
+        event.Skip()
 
     def loadImage(self, urlImg):
         img = wx.Image(urlImg)

@@ -1,1 +1,3 @@
 .vscode/
+components/__pycache__/
+gui/__pycache__/
