@@ -11,7 +11,10 @@ from gui.board import Board
 class Interface ( wx.Frame ):
 
     def __init__( self, parent ):
-        wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Simulación de circuitos", pos = wx.DefaultPosition, size = wx.Size( 750,500 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+        wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Simulación de circuitos", 
+                           pos = wx.DefaultPosition, 
+                           size = wx.Size( 750,500 ), 
+                           style = wx.DEFAULT_FRAME_STYLE^wx.RESIZE_BORDER^wx.MAXIMIZE_BOX )
 
         self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
         self.SetBackgroundColour( wx.Colour( 233, 233, 233 ) )
