@@ -16,6 +16,7 @@ class Data:
         self.x = x
         self.y = y
 
+
 class Board(wx.Panel):
     def __init__(self, parent):
         # PROPIEDADES DE LA CLASE
@@ -25,10 +26,10 @@ class Board(wx.Panel):
         # GESTIONAR GRID
         self.filas = 4
         self.columnas = 4
-        self.xsize, self.ysize = self.GetSize()
 
         # BANDERAS
         self.selected = None
+        self.horizontal = True
 
         # CONTENEDORES
         self.options = []
@@ -37,13 +38,27 @@ class Board(wx.Panel):
 
         # EVENTOS
         self.Bind(wx.EVT_PAINT, self.onDraw)
-        self.Bind(wx.EVT_SIZE, self.resize)
 
-    def resize(self, event):
-        self.xsize, self.ysize = self.GetSize()
-        self.Refresh()
+    
+    def initMatrix(self):
+        matrix = []
+        for i in range(1, self.filas + 1):
+            fila = []
+            coord_y = int((self.ysize / (self.filas + 1)) * i)
+            for j in range(1, self.columnas + 1):
+                coord_x = int((self.xsize / (self.columnas + 1) ) * j)
+                interface = self.loadInterface(Data(len(matrix), len(fila)), coord_x, coord_y)
+                fila.append(interface)
+            matrix.append(fila)
+        return matrix
+    
+    def onDraw(self, event):
+        if len(self.matrix) == 0:
+            self.xsize, self.ysize = self.GetSize()
+            self.matrix = self.initMatrix()
         event.Skip()
 
+    
     def componentFile(self, op):
         file = ""
         if op == 'O':
@@ -61,19 +76,38 @@ class Board(wx.Panel):
         elif op == 'C':
             file ="capacitor"
         return COMPONENT + file + ".png"
-
-    def loadComponent(self, schematic, coords, horizontal=True):
-        img = wx.Image(schematic)
-        if horizontal:
-            scale_y = int((self.ysize / (self.filas + 1)) / 2)
-            scale_x = int(self.xsize / (self.columnas + 1))
+    
+    def componentAttrs(self, coords):
+        pos_x, pos_y = coords
+        if self.horizontal:
+            scale_y = int( ( self.ysize / ( self.filas + 1 ) ) / 2)
+            scale_x = int( ( self.xsize / ( self.columnas + 1) ) - GS )
+            pos_x += GS
+            pos_y = pos_y - (scale_x / 4) + GS 
         else:
-            scale_y = int(self.ysize / (self.filas + 1))
-            scale_x = int((self.xsize / (self.columnas + 1)) / 2)
+            scale_y = int( self.ysize / ( self.filas + 1 ) - GS)
+            scale_x = int( ( self.xsize / ( self.columnas + 1 ) ) / 2)
+            pos_x -= scale_y / 4 + GS
+            pos_y += GS
+            self.horizontal = True
+        return ((pos_x, pos_y), (scale_x, scale_y) )
 
-        img = img.Scale(scale_x, scale_y, wx.IMAGE_QUALITY_HIGH)
-        component = wx.StaticBitmap(self, wx.ID_ANY, wx.Bitmap(img), wx.Point(coords), (scale_x, scale_y), style=0)
+    def loadComponent(self, schematic, coords):
+        img = wx.Image(schematic)
+        if self.horizontal == False:
+            img = img.Rotate90()
+        pos, scale = self.componentAttrs(coords)
+        component = wx.StaticBitmap(self, wx.ID_ANY, wx.Bitmap(img), wx.Point(pos), scale, style=0)
+        component.Bind(wx.EVT_LEAVE_WINDOW, self.closeComponent)
+        component.Bind(wx.EVT_ENTER_WINDOW, self.openComponent)
         self.components.append(component)
+
+    def closeComponent(self, event):
+        event.Skip()
+
+    def openComponent(self, event):
+        event.Skip()
+
 
     def loadOptions(self, coords):
         x, y = coords
@@ -90,38 +124,20 @@ class Board(wx.Panel):
             self.setBitmap(self.matrix[x][y+1], OPTION)
             self.options.append((x, y+1))
 
-    def resetOptions(self, current):
+    def resetOptions(self):
         for i in self.options:
             x, y = i
             self.setBitmap(self.matrix[x][y], NORMAL)
-        x, y = self.selected
+        x, y = self.selected.coords
         self.setBitmap(self.matrix[x][y], NORMAL)
-        x, y = current
-        self.setBitmap(self.matrix[x][y], SELECTED)
         self.selected = None
         self.options = []
 
-    def initMatrix(self):
-        matrix = []
-        for i in range(1, self.filas + 1):
-            fila = []
-            coord_y = int((self.ysize / (self.filas + 1)) * i)
-            for j in range(1, self.columnas + 1):
-                coord_x = int((self.xsize / (self.columnas + 1) ) * j)
-                interface = self.newInterface(Data(len(matrix), len(fila)), coord_x, coord_y)
-                fila.append(interface)
-            matrix.append(fila)
-        return matrix
 
-    def onDraw(self, event):
-        self.matrix = self.initMatrix()
-        self.loadComponent(self.componentFile('R'), (0, 0))
-        event.Skip()
-
-    def newInterface(self, data, x, y):
+    def loadInterface(self, data, x, y):
         pos_x = x - (GS/2)
         pos_y = y - (GS/2)
-        interface = wx.BitmapButton(self, wx.ID_ANY, wx.Bitmap(self.loadImage(NORMAL)) ,size=(GS,GS), pos=wx.Point((pos_x, pos_y)), style=wx.BORDER_NONE)
+        interface = wx.BitmapButton(self, wx.ID_ANY, wx.Bitmap(self.loadImage(NORMAL)), wx.Point((pos_x, pos_y)), (GS,GS), wx.BORDER_NONE)
         interface.SetBackgroundColour("white")
         interface.data = data
         interface.Bind(wx.EVT_LEAVE_WINDOW, self.closeInterface)
@@ -138,7 +154,6 @@ class Board(wx.Panel):
             if m_pos in self.options:
                 self.setBitmap(interface, SELECTED)  
 
-
     def closeInterface(self, event):
         interface = event.GetEventObject()
         if self.selected == None:
@@ -153,11 +168,16 @@ class Board(wx.Panel):
         m_pos = (interface.data.x, interface.data.y)
         if self.selected == None:
             self.loadOptions(m_pos)
-            self.selected = m_pos
+            self.selected = Data(None, None)
+            self.selected.coords = m_pos
+            self.selected.pos = interface.GetPosition()
         elif m_pos in self.options:
-            self.resetOptions(m_pos)
-            #CREAR LA ARISTA CON LA IMAGEN DEL ESQUEMATICO
+            if self.selected.coords[0] != m_pos[0]:
+                self.horizontal = False
+            self.loadComponent( self.componentFile('R'), self.selected.pos )
+            self.resetOptions()
         event.Skip()
+
 
     def loadImage(self, dir):
         img = wx.Image(dir)
