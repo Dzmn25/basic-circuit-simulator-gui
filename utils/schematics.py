@@ -5,6 +5,15 @@ import math
 
 FILE_DIR = "./assets/component.png"
 
+INDUCTOR = 'L'
+CAPACITOR = 'C'
+RESISTOR = 'R'
+SOURCE = 'V'
+TLIN = 'N'
+TLSC = 'G'
+TLOC = 'O'
+
+
 class Rectangle(elm.Element): 
     def __init__(self, **kwargs):
         resheight = 0.25
@@ -18,37 +27,86 @@ class Rectangle(elm.Element):
 
 class Schematic:
     def __init__(self):
-        pass
+        self.id = {
+            RESISTOR : 1,
+            SOURCE : 1,
+            CAPACITOR : 1,
+            INDUCTOR : 1,
+            TLIN : 1,
+            TLSC : 1,
+            TLOC : 1
+            }
 
+    def getId(self, character):
+        aux = self.id[character]
+        self.id[character] += 1
+        return character + str(aux)
+    
     def save(self, drawer):
         drawer.draw(show=False)
         drawer.save(FILE_DIR)
         del drawer
 
-    def genComponent(self, component):
+    def genComponent(self, component, values, horizontal):
         d = schemdraw.Drawing()
-        d += component
+        if horizontal:
+            d += component.label(values).right()
+        else:
+            d += component.label(values).up()
         self.save(d)
 
-    def iSaved(self, component):
+    def iSaved(self, component, values, horizontal):
         try:
-            self.genComponent(component)
+            self.genComponent(component, values, horizontal)
             return True
         except:
+            print("Algo salio mal")
             return False
 
-    def genCapacitor(self):
-        return self.iSaved(elm.Capacitor())
+    def genCapacitor(self, values, horizontal=True): # TESTED
+        id = self.getId(CAPACITOR)
+        values.insert(0, id)
+        return id if self.iSaved(elm.Capacitor(), values, horizontal) else None
 
-    def genResistor(self):
-        return self.iSaved(elm.Resistor())
+    def genResistor(self, values, horizontal=True): # TESTED
+        id = self.getId(RESISTOR)
+        values.insert(0, id)
+        return id if self.iSaved(elm.Resistor(), values, horizontal) else None
 
-    def genSource(self):
-        return self.iSaved(elm.SourceV().right())
+    def genSource(self, values, horizontal=True): #TESTED
+        id = self.getId(SOURCE)
+        values.insert(0, id)
+        return id if self.iSaved(elm.SourceV(), values, horizontal) else None
         
-    def genInductor(self):
-        return self.iSaved(elm.Inductor())
+    def genInductor(self, values, horizontal=True): 
+        id = self.getId(INDUCTOR)
+        values.insert(0, id)
+        return id if self.iSaved(elm.Inductor(), values, horizontal) else None
+    
+    def genTLIN(self, values, horizontal=True):
+        id = self.getId(TLIN)
+        values.insert(0, id)
+        return id if self.iSaved(elm.Line().color("yellow"), values, horizontal) else None
+    
+    def genTLOC(self, values, horizontal=True):
+        id = self.getId(TLOC)
+        values.insert(0, id)
+        return self.iSaved(elm.Line().color("purple"), values, horizontal)
+    
+    def genTLSC(self, values, horizontal=True):
+        id = self.getId(TLSC)
+        values.insert(0, id)
+        return self.iSaved(elm.Line().color("cian"), values, horizontal)
 
+
+
+"""gen = Schematic()
+values = ["50000 Ω"]
+result = gen.genInductor(values, False)
+if result != None:
+    print(result)"""
+
+# ANTIGUA FORMA DE GENERAR STUBS (NO VIABLE)
     
 """
 TLOC
@@ -77,40 +135,44 @@ d += elm.Line().length(2).right().linewidth(4)
 GROUND
 elm.Ground()
 
-    def genComponent(self, component, name, value, orientation):
+"""
+
+
+# GENERAR IMAGENES UNA SOLA VEZ
+
+"""
+    def save(self, drawer):
+        drawer.draw(show=False)
+        drawer.save(FILE_DIR)
+        del drawer
+
+    def genComponent(self, component):
         d = schemdraw.Drawing()
-        if orientation == 'H':
-            d += component.label([name, value])
-        else:
-            d += component.label([name, value]).up()
+        d += component
         self.save(d)
 
-    def iSaved(self, component, name, value, orientation):
+    def iSaved(self, component):
         try:
-            self.genComponent(component, name, value, orientation)
+            self.genComponent(component)
             return True
         except:
             return False
 
-    def genCapacitor(self, id, unit, value, orientation):
-        return self.iSaved(elm.Capacitor(), "C" + str(id), str(value) + unit, orientation)
+    def genCapacitor(self):
+        return self.iSaved(elm.Capacitor())
 
-    def genResistor(self, id, unit, value, orientation):
-        return self.iSaved(elm.Resistor(), "R" + str(id), str(value) + unit, orientation)
+    def genResistor(self):
+        return self.iSaved(elm.Resistor())
 
-    def genSource(self, id, unit, value, orientation):
-        return self.iSaved(elm.SourceV(), "V" + str(id), str(value) + unit, orientation)
+    def genSource(self):
+        return self.iSaved(elm.SourceV().right())
         
-    def genInductor(self, id, unit, value, orientation):
-        return self.iSaved(elm.Inductor(), "R" + str(id), str(value) + unit, orientation)
-
-
-gen = Schematic()
-if (gen.genCapacitor(1, "Ω", 50, "H")):
-    print("La imagen se guardo con exito")
-
-"""
+    def genInductor(self):
+        return self.iSaved(elm.Inductor())
+    
 
 gen = Schematic()
 if (gen.genSource()):
     print("La imagen se guardo con exito")
+    
+"""
