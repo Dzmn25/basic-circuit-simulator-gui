@@ -6,8 +6,11 @@ from utils.schematics import Schematic, FILE_DIR
 NORMAL = "./assets/etc/black.png"
 SELECTED = "./assets/etc/green.png"
 OPTION = "./assets/etc/blue.png"
+OCCUPED = "./assets/etc/red.png"
 
-COMPONENT_DIR = "./assets/components/"
+COMPONENT = "./assets/component.png"
+
+OPPOSITE = { "up": "down", "down":"up", "left":"right", "right":"left" }
 
 GS = 8
 
@@ -17,10 +20,12 @@ class Node:
         self.coords = (x, y)
         interface.data = self.coords
         self.interface = interface
-        self.up = None
-        self.down = None
-        self.right = None
-        self.left = None
+        self.neighbors = {
+            "up" : None,
+            "down" : None,
+            "right" : None,
+            "left" : None
+        }
 
 
 class Board(wx.Panel):
@@ -42,6 +47,7 @@ class Board(wx.Panel):
 
         # CONTENEDORES
         self.options = []
+        self.occupied = []
         self.components = []
         self.matrix = []
 
@@ -57,7 +63,14 @@ class Board(wx.Panel):
             for j in range(1, self.columnas + 1):
                 coord_x = self.cellWidth * j
                 interface = self.loadInterface(coord_x, coord_y)
-                fila.append(Node(len(matrix), len(fila), interface))
+                x = len(matrix)
+                y = len(fila)
+                node = Node(x, y, interface)
+                node.neighbors["up"] = 1 if x == 0 else None
+                node.neighbors["left"] = 1 if y == 0 else None
+                node.neighbors["down"] = 1 if x == (self.filas - 1) else None
+                node.neighbors["right"] = 1 if y == (self.columnas - 1) else None
+                fila.append(node)
             matrix.append(fila)
         return matrix
     
@@ -69,31 +82,36 @@ class Board(wx.Panel):
             self.matrix = self.initMatrix()
         event.Skip()
 
+    def Cancel(self):
+        if self.selected != None:
+            self.resetOptions()
+
     
-    def componentFile(self, component):
-        success = False
+    def genImgComponent(self):
+        component = self.GetParent().getTarget()
+        id = None
         if component == 'O':
-            success = self.schematic.genTLOC()
+            id = self.schematic.genTLOC(self.horizontal)
         elif component == 'N':
-            success = self.schematic.genTLIN()
+            id = self.schematic.genTLIN(self.horizontal)
         elif component == 'G':
-            success = self.schematic.genTLSC()
+            id = self.schematic.genTLSC(self.horizontal)
         elif component == 'R':
-            success = self.schematic.genResistor(id, )
+            id = self.schematic.genResistor(self.horizontal)
         elif component == 'V':
-            file ="source"
+            id = self.schematic.genSource(self.horizontal)
         elif component == 'L':
-            file ="inductor"
+            id = self.schematic.genInductor(self.horizontal)
         elif component == 'C':
-            file ="capacitor"
-        return success
+            id = self.schematic.genCapacitor(self.horizontal)
+        return id
     
     def componentAttrs(self, coords):
         pos_x, pos_y = coords
         if self.horizontal:
             scale_y = int( self.cellHeight / 2)
             scale_x = self.cellWidth - GS 
-            pos_y = pos_y - (scale_x / 4) + GS 
+            pos_y -= (scale_x / 4) + GS - 8
             if self.inverted:
                 pos_x -= self.cellWidth - GS
                 self.inverted = False
@@ -102,7 +120,7 @@ class Board(wx.Panel):
         else:
             scale_y = self.cellHeight - GS
             scale_x = int( self.cellWidth / 2)
-            pos_x -= scale_y / 4 + GS
+            pos_x -= scale_y / 4 + GS + 5
             if self.inverted:
                 pos_y -= self.cellHeight - GS
                 self.inverted = False
@@ -111,10 +129,12 @@ class Board(wx.Panel):
             self.horizontal = True
         return ((pos_x, pos_y), (scale_x, scale_y) )
 
-    def loadComponent(self, schematic, coords):
+    def loadComponent(self, schematic, origin, dest, coords, id):
         img = wx.Image(schematic)
+        dir = "right" if self.inverted == False else "left"
         if self.horizontal == False:
-            img = img.Rotate90()
+            #img = img.Rotate90()
+            dir = "down" if self.inverted == False else "up"
         pos, scale = self.componentAttrs(coords)
         if self.special:
             img = img.Scale(scale[0], scale[1], wx.IMAGE_QUALITY_NORMAL)
@@ -124,53 +144,109 @@ class Board(wx.Panel):
         component.Bind(wx.EVT_ENTER_WINDOW, self.openComponent)
         component.Bind(wx.EVT_LEFT_DOWN, self.leftCliComponent)
         component.Bind(wx.EVT_RIGHT_DOWN, self.rightCliComponent)
-        component.SetTransparent(True)
+        component.start = origin
+        component.end = dest
+        component.dir = dir
+        component.id = id
+        component.values = self.GetParent().getValues()
+        component.aux = len(self.components)
         self.components.append(component)
+        self.GetParent().updateGrid(self.components)
 
     def closeComponent(self, event):
         component = event.GetEventObject()
         component.SetBackgroundColour("white")
-        component.Update()
-        #print("Sali de una imagen")
+        component.Refresh()
 
     def openComponent(self, event):
         component = event.GetEventObject()
         component.SetBackgroundColour(wx.SystemSettings.GetColour( wx.SYS_COLOUR_3DLIGHT ))
-        component.Update()
-        #print("Entre a una imagen")
+        component.Refresh()
 
     def leftCliComponent(self, event):
-        # ELIMINAR
-        event.Skip()
+        # EDITAR
+        component = event.GetEventObject()
+        if self.GetParent().getTarget() == component.id[0]:
+            component.values = self.GetParent().getValues()
+            self.GetParent().updateGrid(self.components)
 
     def rightCliComponent(self, event):
-        # EDITAR
-        event.Skip()
+        # ELIMINAR
+        if self.selected == None:
+            component = event.GetEventObject()
+            x,y = component.start ; dir = component.dir
+            self.matrix[x][y].neighbors[dir] = None
+            x,y = component.end ; dir = self.getOpposite(dir)
+            self.matrix[x][y].neighbors[dir] = None
+            self.schematic.removed(component.id[0])
+            self.components.pop(component.aux)
+            component.Destroy()
+            self.GetParent().updateGrid(self.components)
+
+    def getOpposite(self, dir):
+        return OPPOSITE[dir]
 
 
     def loadOptions(self, coords):
         x, y = coords
+        available = self.matrix[x][y].neighbors
         if x > 0:
-            self.setBitmap(self.matrix[x-1][y].interface, OPTION)
-            self.options.append((x-1, y))
+            if available["up"] == None:
+                self.setBitmap(self.matrix[x-1][y].interface, OPTION)  
+                self.options.append((x-1, y))
+            else:
+                self.setBitmap(self.matrix[x-1][y].interface, OCCUPED)
+                self.occupied.append((x-1, y))
         if y > 0:
-            self.setBitmap(self.matrix[x][y-1].interface, OPTION)
-            self.options.append((x, y-1))
+            if available["left"] == None:
+                self.setBitmap(self.matrix[x][y-1].interface, OPTION)
+                self.options.append((x, y-1))
+            else:
+                self.setBitmap(self.matrix[x][y-1].interface, OCCUPED)
+                self.occupied.append((x, y-1))
         if x < (self.columnas -1):
-            self.setBitmap(self.matrix[x+1][y].interface, OPTION)
-            self.options.append((x+1, y))
+            if available["down"] == None:
+                self.setBitmap(self.matrix[x+1][y].interface, OPTION)
+                self.options.append((x+1, y))
+            else:
+                self.setBitmap(self.matrix[x+1][y].interface, OCCUPED)
+                self.occupied.append((x+1, y))
         if y < (self.filas - 1):
-            self.setBitmap(self.matrix[x][y+1].interface, OPTION)
-            self.options.append((x, y+1))
+            if available["right"] == None:
+                self.setBitmap(self.matrix[x][y+1].interface, OPTION)
+                self.options.append((x, y+1))
+            else:
+                self.setBitmap(self.matrix[x][y+1].interface, OCCUPED)
+                self.occupied.append((x, y+1))
 
     def resetOptions(self):
         for i in self.options:
+            x, y = i
+            self.setBitmap(self.matrix[x][y].interface, NORMAL)
+        for i in self.occupied: 
             x, y = i
             self.setBitmap(self.matrix[x][y].interface, NORMAL)
         x, y = self.selected.coords
         self.setBitmap(self.matrix[x][y].interface, NORMAL)
         self.selected = None
         self.options = []
+        self.occupied = []
+
+    def lockOptions(self, ori, dest):
+        ox, oy = ori
+        dx, dy = dest
+        if oy > dy:
+            self.matrix[ox][oy].neighbors["left"] = dest
+            self.matrix[dx][dy].neighbors["right"] = ori
+        elif oy < dy:
+            self.matrix[ox][oy].neighbors["right"] = dest
+            self.matrix[dx][dy].neighbors["left"] = ori
+        elif ox > dx:
+            self.matrix[ox][oy].neighbors["up"] = dest
+            self.matrix[dx][dy].neighbors["down"] = ori
+        elif ox < dx:
+            self.matrix[ox][oy].neighbors["down"] = dest
+            self.matrix[dx][dy].neighbors["up"] = ori
 
 
     def loadInterface(self, x, y):
@@ -199,11 +275,18 @@ class Board(wx.Panel):
         else:
             m_pos = interface.data
             if m_pos in self.options:
-                self.setBitmap(interface, OPTION)  
+                self.setBitmap(interface, OPTION) 
+
+    def validateInterface(self, coords):
+        x,y = coords
+        neighbors = self.matrix[x][y].neighbors
+        return neighbors["up"] == None or neighbors["down"] == None or neighbors["right"] == None or neighbors["left"] == None
 
     def clicInterface(self, event):
         interface = event.GetEventObject()
         m_pos = interface.data
+        if not self.validateInterface(m_pos):
+            return
         if self.selected == None:
             self.loadOptions(m_pos)
             self.selected = self.matrix[m_pos[0]][m_pos[1]]
@@ -212,12 +295,12 @@ class Board(wx.Panel):
                 self.inverted = True
             if self.selected.coords[0] != m_pos[0]:
                 self.horizontal = False
-            component = self.GetParent().getTarget()
-            #self.componentFile(component)
-            self.loadComponent( "./assets/components/resistor.png", self.selected.interface.GetPosition() )
+            self.lockOptions(interface.data, self.selected.coords)
+            id = self.genImgComponent()
+            if id != None:
+                self.loadComponent( COMPONENT, self.selected.coords, m_pos , self.selected.interface.GetPosition(), id)
             self.resetOptions()
         event.Skip()
-
 
     def scaleImage(self, dir):
         img = wx.Image(dir)

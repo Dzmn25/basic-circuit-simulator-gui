@@ -12,18 +12,7 @@ SOURCE = 'V'
 TLIN = 'N'
 TLSC = 'G'
 TLOC = 'O'
-
-
-class Rectangle(elm.Element): 
-    def __init__(self, **kwargs):
-        resheight = 0.25
-        reswidth = 1.0 / 6
-        gap = (math.nan, math.nan)
-        super().__init__(**kwargs)
-        self.segments.append(Segment(
-            [(0, 0), (0, resheight), (reswidth*6, resheight),
-             (reswidth*6, -resheight), (0, -resheight), (0, 0),
-             gap, (reswidth*6, 0)]))
+        
 
 class Schematic:
     def __init__(self):
@@ -42,73 +31,79 @@ class Schematic:
         self.id[character] += 1
         return character + str(aux)
     
+    def removed(self, typ):
+        self.id[typ] -= 1
+    
     def save(self, drawer):
         drawer.draw(show=False)
         drawer.save(FILE_DIR)
         del drawer
 
-    def genComponent(self, component, values, horizontal):
+    def genComponent(self, component, id, horizontal):
         d = schemdraw.Drawing()
         if horizontal:
-            d += component.label(values).right()
+            d += component.label(id).right()
         else:
-            d += component.label(values).up()
+            d += component.label(id).up()
         self.save(d)
 
-    def iSaved(self, component, values, horizontal):
+    def iSaved(self, component, id, horizontal):
         try:
-            self.genComponent(component, values, horizontal)
+            self.genComponent(component, id, horizontal)
             return True
         except:
             print("Algo salio mal")
             return False
 
-    def genCapacitor(self, values, horizontal=True): # TESTED
+    def genCapacitor(self, horizontal=True): # TESTED
         id = self.getId(CAPACITOR)
-        values.insert(0, id)
-        return id if self.iSaved(elm.Capacitor(), values, horizontal) else None
+        return id if self.iSaved(elm.Capacitor(), id, horizontal) else None
 
-    def genResistor(self, values, horizontal=True): # TESTED
+    def genResistor(self, horizontal=True): # TESTED
         id = self.getId(RESISTOR)
-        values.insert(0, id)
-        return id if self.iSaved(elm.Resistor(), values, horizontal) else None
+        return id if self.iSaved(elm.Resistor(), id, horizontal) else None
 
-    def genSource(self, values, horizontal=True): #TESTED
+    def genSource(self, horizontal=True): #TESTED
         id = self.getId(SOURCE)
-        values.insert(0, id)
-        return id if self.iSaved(elm.SourceV(), values, horizontal) else None
+        return id if self.iSaved(elm.SourceV(), id, horizontal) else None
         
-    def genInductor(self, values, horizontal=True): 
+    def genInductor(self, horizontal=True): 
         id = self.getId(INDUCTOR)
-        values.insert(0, id)
-        return id if self.iSaved(elm.Inductor(), values, horizontal) else None
+        return id if self.iSaved(elm.Inductor(), id, horizontal) else None
     
-    def genTLIN(self, values, horizontal=True):
+    def genTLIN(self, horizontal=True): #TESTED
         id = self.getId(TLIN)
-        values.insert(0, id)
-        return id if self.iSaved(elm.Line().color("yellow"), values, horizontal) else None
+        return id if self.iSaved(elm.Line().color("yellow"), id, horizontal) else None
     
-    def genTLOC(self, values, horizontal=True):
+    def genTLOC(self, horizontal=True): #TESTED
         id = self.getId(TLOC)
-        values.insert(0, id)
-        return self.iSaved(elm.Line().color("purple"), values, horizontal)
+        return id if self.iSaved(elm.Line().color("purple"), id, horizontal) else None
     
-    def genTLSC(self, values, horizontal=True):
+    def genTLSC(self, horizontal=True): #TESTED
         id = self.getId(TLSC)
-        values.insert(0, id)
-        return self.iSaved(elm.Line().color("cian"), values, horizontal)
+        return id if self.iSaved(elm.Line().color("orange"), id, horizontal) else None
 
 
 
 """gen = Schematic()
-values = ["50000 Ω"]
-result = gen.genInductor(values, False)
+result = gen.genInductor()
 if result != None:
     print(result)"""
 
 # ANTIGUA FORMA DE GENERAR STUBS (NO VIABLE)
     
 """
+class Rectangle(elm.Element): 
+    def __init__(self, **kwargs):
+        resheight = 0.25
+        reswidth = 1.0 / 6
+        gap = (math.nan, math.nan)
+        super().__init__(**kwargs)
+        self.segments.append(Segment(
+            [(0, 0), (0, resheight), (reswidth*6, resheight),
+             (reswidth*6, -resheight), (0, -resheight), (0, 0),
+             gap, (reswidth*6, 0)]))
+
 TLOC
 d += elm.DataBusLine().length(2).flip()
 d += elm.Line().length(1).up()

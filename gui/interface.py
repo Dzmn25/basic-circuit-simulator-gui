@@ -3,6 +3,7 @@
 import wx
 import wx.xrc
 import wx.grid
+from wx.lib.intctrl import IntCtrl
 from gui.board import Board
 
 ###########################################################################
@@ -14,7 +15,7 @@ class Interface ( wx.Frame ):
     def __init__( self, parent ):
         wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Simulación de circuitos", 
                            pos = wx.DefaultPosition, 
-                           size = wx.Size( 900,600 ), 
+                           size = wx.Size( 1100, 700 ), 
                            style = wx.DEFAULT_FRAME_STYLE^wx.RESIZE_BORDER^wx.MAXIMIZE_BOX )
 
         self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
@@ -48,7 +49,7 @@ class Interface ( wx.Frame ):
         self.rbtnTlsc = wx.RadioButton( self, wx.ID_ANY, u"TLSC - G", wx.DefaultPosition, wx.DefaultSize, 0 )
         bUtils.Add( self.rbtnTlsc, 0, wx.ALL, 5 )
 
-        self.rbtnConector = wx.RadioButton( self, wx.ID_ANY, u"Conector - G", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.rbtnConector = wx.RadioButton( self, wx.ID_ANY, u"Conector", wx.DefaultPosition, wx.DefaultSize, 0 )
         bUtils.Add( self.rbtnConector, 0, wx.ALL, 5 )
 
         bUtils.Add( ( 0, 0), 1, wx.EXPAND, 5 )
@@ -60,7 +61,7 @@ class Interface ( wx.Frame ):
 
         bForm1 = wx.BoxSizer( wx.HORIZONTAL )
 
-        self.bxUnit1 = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.bxUnit1 = IntCtrl( self, wx.ID_ANY, 1, wx.DefaultPosition, wx.DefaultSize, 0 , min = 1)
         bForm1.Add( self.bxUnit1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
         self.lblUnit1 = wx.StaticText( self, wx.ID_ANY, u"v", wx.DefaultPosition, wx.DefaultSize, 0 )
@@ -78,7 +79,7 @@ class Interface ( wx.Frame ):
 
         bForm2 = wx.BoxSizer( wx.HORIZONTAL )
 
-        self.bxUnit2 = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.bxUnit2 = IntCtrl( self, wx.ID_ANY, 1, wx.DefaultPosition, wx.DefaultSize, 0 , min = 1)
         self.bxUnit2.Disable()
         bForm2.Add( self.bxUnit2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
@@ -97,14 +98,14 @@ class Interface ( wx.Frame ):
 
         bForm3 = wx.BoxSizer( wx.HORIZONTAL )
 
-        self.bxUnit3 = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.bxUnit3 = IntCtrl( self, wx.ID_ANY, 1, wx.DefaultPosition, wx.DefaultSize, 0, min = 1 )
         self.bxUnit3.Disable()
         bForm3.Add( self.bxUnit3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
-        self.lblUnit2 = wx.StaticText( self, wx.ID_ANY, u"N/A", wx.DefaultPosition, wx.DefaultSize, 0 )
-        self.lblUnit2.Wrap( -1 )
+        self.lblUnit3 = wx.StaticText( self, wx.ID_ANY, u"N/A", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.lblUnit3.Wrap( -1 )
 
-        bForm3.Add( self.lblUnit2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
+        bForm3.Add( self.lblUnit3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 
         bUtils.Add( bForm3, 1, wx.EXPAND, 5 )
@@ -112,7 +113,7 @@ class Interface ( wx.Frame ):
 
         bUtils.Add( ( 0, 0), 1, wx.EXPAND, 5 )
 
-        self.btnCalcular = wx.Button( self, wx.ID_ANY, u"Calcular", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.btnCalcular = wx.Button( self, wx.ID_ANY, u"Netlist", wx.DefaultPosition, wx.DefaultSize, 0 )
         self.btnCalcular.SetFont( wx.Font( 13, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, "Arial" ) )
 
         bUtils.Add( self.btnCalcular, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
@@ -131,9 +132,9 @@ class Interface ( wx.Frame ):
 
         # Columns
         self.gridValues.SetColSize( 0, 30 )
-        self.gridValues.SetColSize( 1, 40 )
-        self.gridValues.SetColSize( 2, 40 )
-        self.gridValues.SetColSize( 3, 40 )
+        self.gridValues.SetColSize( 1, 90 )
+        self.gridValues.SetColSize( 2, 90 )
+        self.gridValues.SetColSize( 3, 90 )
         self.gridValues.EnableDragColMove( False )
         self.gridValues.EnableDragColSize( True )
         self.gridValues.SetColLabelValue( 0, u"ID" )
@@ -152,8 +153,8 @@ class Interface ( wx.Frame ):
 
         # Cell Defaults
         self.gridValues.SetDefaultCellAlignment( wx.ALIGN_LEFT, wx.ALIGN_TOP )
-        self.gridValues.SetMinSize( wx.Size( 170,90 ) )
-        self.gridValues.SetMaxSize( wx.Size( 170,90 ) )
+        self.gridValues.SetMinSize( wx.Size( 330,100 ) )
+        self.gridValues.SetMaxSize( wx.Size( 330,100 ) )
 
         bUtils.Add( self.gridValues, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
 
@@ -185,41 +186,101 @@ class Interface ( wx.Frame ):
         self.rbtnTloc.Bind(wx.EVT_RADIOBUTTON, self.OnBtnTloc )
         self.rbtnTlsc.Bind(wx.EVT_RADIOBUTTON, self.OnBtnTlsc )
         self.btnCalcular.Bind( wx.EVT_BUTTON, self.OnCalcular )
+        self.pChart.Bind(wx.EVT_CHAR, self.onCancel)
+        self.Bind(wx.EVT_CHAR, self.onCancel)
 
     def __del__( self ):
         pass
 
     def getTarget(self):
         return self.target
+    
+    def getValues(self):
+        values = []
+        if self.getTarget() == 'N' or self.getTarget() == 'G' or self.getTarget() == 'O':
+            if self.bxUnit1.IsInBounds() and self.bxUnit2.IsInBounds() and self.bxUnit3.IsInBounds():
+                values.append( ( int( self.bxUnit1.GetValue() ) , self.lblUnit1.GetLabelText() ) )
+                values.append( ( int( self.bxUnit2.GetValue() ) , self.lblUnit2.GetLabelText() ) )
+                values.append( ( int( self.bxUnit3.GetValue() ) , self.lblUnit3.GetLabelText() ) )
+                return values
+            else:
+                return None
+        else:
+            if self.bxUnit1.IsInBounds():
+                values.append( ( int( self.bxUnit1.GetValue() ) , self.lblUnit1.GetLabelText() ) )
+                return values
+        return None
+    
+    def addComponent(self, id, values, pos):
+        if len(values) == 1:
+            self.gridValues.SetCellValue(pos, 0, id)
+            self.gridValues.SetCellValue(pos, 1, str(values[0][0]) + str(values[0][1]) )
+        elif len(values) == 3:
+            self.gridValues.SetCellValue(pos, 0, id)
+            self.gridValues.SetCellValue(pos, 1, str(values[0][0]) + str(values[0][1]) )
+            self.gridValues.SetCellValue(pos, 2, str(values[1][0]) + str(values[1][1]))
+            self.gridValues.SetCellValue(pos, 3, str(values[2][0]) + str(values[2][1]))
+
+    def updateGrid(self, componentes):
+        aux = 0
+        self.gridValues.ClearGrid()
+        for i in componentes:
+            self.addComponent(i.id, i.values, aux)
+            aux += 1
+    
+    def clearEntry(self, values):
+        self.lblUnit1.SetLabelText(values[0])
+        if len(values) == 3:
+            self.lblValue1.SetLabelText("Z") ; self.lblValue2.SetLabelText("E") ; self.lblValue3.SetLabelText("F")
+            self.bxUnit2.Enable() ; self.lblUnit2.SetLabelText(values[1])
+            self.bxUnit3.Enable() ; self.lblUnit3.SetLabelText(values[2])
+        else:
+            self.lblValue1.SetLabelText("Valor:") ; self.lblValue2.SetLabelText("") ; self.lblValue3.SetLabelText("")
+            self.bxUnit2.Disable() ; self.lblUnit2.SetLabelText(u"N/A")
+            self.bxUnit3.Disable() ; self.lblUnit3.SetLabelText(u"N/A")
+        pass
+
 
     # Virtual event handlers, override them in your derived class
     def OnBtnTlin(self, event):
         self.target = 'N'
+        self.clearEntry([u"Ω", u"", u"GHz"])
         event.Skip()
 
     def OnBtnTloc(self, event):
         self.target = 'O'
+        self.clearEntry([u"Ω", u"", u"GHz"])
         event.Skip()
 
     def OnBtnTlsc(self, event):
         self.target = 'G'
+        self.clearEntry([u"Ω", u"", u"GHz"])
         event.Skip()
 
     def OnBtnVoltaje( self, event ):
         self.target = 'V'
+        self.clearEntry([u"v"])
         event.Skip()
 
     def OnBtnResistencia( self, event ):
         self.target = 'R'
+        self.clearEntry([u"Ω"])
         event.Skip()
 
     def OnBtnInductor( self, event ):
         self.target = 'L'
+        self.clearEntry([u"H"])
         event.Skip()
 
     def OnBtnCapacitor( self, event ):
         self.target = 'C'
+        self.clearEntry([u"F"])
         event.Skip()
 
     def OnCalcular( self, event ):
         event.Skip()
+
+    def onCancel(self, event):
+        key = event.GetKeyCode()
+        if key == 27:
+            self.pChart.Cancel()
