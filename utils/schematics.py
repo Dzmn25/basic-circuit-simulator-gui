@@ -73,7 +73,7 @@ class Schematic:
     
     def genTLIN(self, horizontal=True): #TESTED
         id = self.getId(TLIN)
-        return id if self.iSaved(elm.Line().color("yellow"), id, horizontal) else None
+        return id if self.iSaved(elm.Line().color("gray"), id, horizontal) else None
     
     def genTLOC(self, horizontal=True): #TESTED
         id = self.getId(TLOC)
@@ -82,6 +82,10 @@ class Schematic:
     def genTLSC(self, horizontal=True): #TESTED
         id = self.getId(TLSC)
         return id if self.iSaved(elm.Line().color("orange"), id, horizontal) else None
+    
+    def genConector(self, horizontal=True):
+        id = " "
+        return id if self.iSaved(elm.Line(), id, horizontal) else None
 
 
 

@@ -104,6 +104,8 @@ class Board(wx.Panel):
             id = self.schematic.genInductor(self.horizontal)
         elif component == 'C':
             id = self.schematic.genCapacitor(self.horizontal)
+        elif component == 'U':
+            id = self.schematic.genConector(self.horizontal)
         return id
     
     def componentAttrs(self, coords):

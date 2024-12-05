@@ -185,6 +185,7 @@ class Interface ( wx.Frame ):
         self.rbtnTlin.Bind(wx.EVT_RADIOBUTTON, self.OnBtnTlin )
         self.rbtnTloc.Bind(wx.EVT_RADIOBUTTON, self.OnBtnTloc )
         self.rbtnTlsc.Bind(wx.EVT_RADIOBUTTON, self.OnBtnTlsc )
+        self.rbtnConector.Bind(wx.EVT_RADIOBUTTON, self.OnBtnConector )
         self.btnCalcular.Bind( wx.EVT_BUTTON, self.OnCalcular )
         self.pChart.Bind(wx.EVT_CHAR, self.onCancel)
         self.Bind(wx.EVT_CHAR, self.onCancel)
@@ -225,8 +226,9 @@ class Interface ( wx.Frame ):
         aux = 0
         self.gridValues.ClearGrid()
         for i in componentes:
-            self.addComponent(i.id, i.values, aux)
-            aux += 1
+            if i.id != " ":
+                self.addComponent(i.id, i.values, aux)
+                aux += 1
     
     def clearEntry(self, values):
         self.lblUnit1.SetLabelText(values[0])
@@ -275,6 +277,10 @@ class Interface ( wx.Frame ):
     def OnBtnCapacitor( self, event ):
         self.target = 'C'
         self.clearEntry([u"F"])
+        event.Skip()
+
+    def OnBtnConector(self, event):
+        self.target = 'U'
         event.Skip()
 
     def OnCalcular( self, event ):
