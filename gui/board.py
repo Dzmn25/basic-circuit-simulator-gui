@@ -10,6 +10,9 @@ OCCUPED = "./assets/etc/red.png"
 
 COMPONENT = "./assets/component.png"
 
+#AQUI SE MODIFICA LA DIRECCION DONDE SE GUARDA LA NETLIST
+NETLIST_DIR = "./assets/netlist.txt"
+
 OPPOSITE = { "up": "down", "down":"up", "left":"right", "right":"left" }
 
 GS = 8
@@ -66,6 +69,31 @@ class Board(wx.Panel):
 
         # EVENTOS
         self.Bind(wx.EVT_PAINT, self.onDraw)
+
+    def clean(self):
+        for fila in self.matrix:
+            for columna in fila:
+                columna.interface.Destroy()
+
+        for componente in self.components:
+            componente.uiElement.Destroy()
+
+        self.options = []
+        self.occupied = []
+        self.components = []
+        self.matrix = []
+        self.availables = []
+
+        self.nodeId = 0
+
+        self.selected = None
+        self.horizontal = True
+        self.inverted = False
+        self.special = False
+
+        self.schematic = Schematic()
+
+        self.Refresh()
 
     
     def initMatrix(self):
@@ -343,11 +371,14 @@ class Board(wx.Panel):
                 self.matrix[dest[0]][dest[1]].id = self.matrix[origin[0]][origin[1]].id
             else:
                 self.manageNodeId(dest)
+        elif self.matrix[origin[0]][origin[1]].id != None and self.matrix[dest[0]][dest[1]].id != None:
+            if self.GetParent().getTarget() == "U":
+                self.matrix[origin[0]][origin[1]].id = self.matrix[dest[0]][dest[1]].id
 
     def manageNodeId(self, coords):
         x, y = coords
         self.matrix[x][y].id = self.nodeId
-        self.nodeId += 1
+        self.nodeId += 1       
 
 
     def scaleImage(self, dir):
@@ -356,3 +387,26 @@ class Board(wx.Panel):
         
     def setBitmap(self, interface, dir):
         interface.SetBitmap(wx.Bitmap(self.scaleImage(dir)))
+
+    
+    def printNetlist(self):
+        txt = ""
+        for c in self.components:
+            if c.id == "V1":
+                string = str(c.id)
+                string = string + " " + str(self.matrix[c.end[0]][c.end[1]].id)
+                string = string + " " + str(self.matrix[c.start[0]][c.start[1]].id)
+                string = string + " " + str(c.values[0][0])
+                txt = txt + string + '\n'
+            elif c.id != " ":
+                string = str(c.id)
+                string = string + " " + str(self.matrix[c.start[0]][c.start[1]].id)
+                string = string + " " + str(self.matrix[c.end[0]][c.end[1]].id)
+                string = string + " " + str(c.values[0][0])
+                if len(c.values) == 3:
+                    string = string + " " + str(c.values[1][0])
+                    string = string + " " + str(c.values[2][0]) + str(c.values[2][1])
+                txt = txt + string + '\n'
+
+        with open(NETLIST_DIR, 'w') as archivo:
+            archivo.write(txt)

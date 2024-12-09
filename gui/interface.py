@@ -102,21 +102,30 @@ class Interface ( wx.Frame ):
         self.bxUnit3.Disable()
         bForm3.Add( self.bxUnit3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
-        self.lblUnit3 = wx.StaticText( self, wx.ID_ANY, u"N/A", wx.DefaultPosition, wx.DefaultSize, 0 )
-        self.lblUnit3.Wrap( -1 )
-
-        bForm3.Add( self.lblUnit3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
-
+        frecuencyChoices = [ u"KHz", u"MHz", u"GHz" ]
+        self.frecuency = wx.Choice( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, frecuencyChoices, 0 )
+        self.frecuency.SetSelection( 0 )
+        self.frecuency.Disable()
+        bForm3.Add( self.frecuency, 0, wx.ALL, 5 )
 
         bUtils.Add( bForm3, 1, wx.EXPAND, 5 )
 
 
         bUtils.Add( ( 0, 0), 1, wx.EXPAND, 5 )
 
-        self.btnCalcular = wx.Button( self, wx.ID_ANY, u"Netlist", wx.DefaultPosition, wx.DefaultSize, 0 )
-        self.btnCalcular.SetFont( wx.Font( 13, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, "Arial" ) )
+        bButtons = wx.BoxSizer( wx.HORIZONTAL )
 
-        bUtils.Add( self.btnCalcular, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
+        self.btnReset = wx.Button( self, wx.ID_ANY, u"Limpiar", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bButtons.Add( self.btnReset, 0, wx.ALL, 5 )
+
+        self.btnNetlist = wx.Button( self, wx.ID_ANY, u"Netlist", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bButtons.Add( self.btnNetlist, 0, wx.ALL, 5 )
+
+        self.btnMatlab = wx.Button( self, wx.ID_ANY, u"Matlab", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bButtons.Add( self.btnMatlab, 0, wx.ALL, 5 )
+
+
+        bUtils.Add( bButtons, 1, wx.ALIGN_CENTER_HORIZONTAL, 5 )
 
 
         bUtils.Add( ( 0, 0), 1, wx.EXPAND, 5 )
@@ -186,7 +195,9 @@ class Interface ( wx.Frame ):
         self.rbtnTloc.Bind(wx.EVT_RADIOBUTTON, self.OnBtnTloc )
         self.rbtnTlsc.Bind(wx.EVT_RADIOBUTTON, self.OnBtnTlsc )
         self.rbtnConector.Bind(wx.EVT_RADIOBUTTON, self.OnBtnConector )
-        self.btnCalcular.Bind( wx.EVT_BUTTON, self.OnCalcular )
+        self.btnNetlist.Bind( wx.EVT_BUTTON, self.OnNetlist )
+        self.btnReset.Bind( wx.EVT_BUTTON, self.OnReset )
+        self.btnMatlab.Bind( wx.EVT_BUTTON, self.OnMatlab )
         self.pChart.Bind(wx.EVT_CHAR, self.onCancel)
         self.Bind(wx.EVT_CHAR, self.onCancel)
 
@@ -197,12 +208,13 @@ class Interface ( wx.Frame ):
         return self.target
     
     def getValues(self):
+        frecuencyChoices = [ u"KHz", u"MHz", u"GHz" ]
         values = []
         if self.getTarget() == 'N' or self.getTarget() == 'G' or self.getTarget() == 'O':
             if self.bxUnit1.IsInBounds() and self.bxUnit2.IsInBounds() and self.bxUnit3.IsInBounds():
                 values.append( ( int( self.bxUnit1.GetValue() ) , self.lblUnit1.GetLabelText() ) )
                 values.append( ( int( self.bxUnit2.GetValue() ) , self.lblUnit2.GetLabelText() ) )
-                values.append( ( int( self.bxUnit3.GetValue() ) , self.lblUnit3.GetLabelText() ) )
+                values.append( ( int( self.bxUnit3.GetValue() ) , str(frecuencyChoices[self.frecuency.GetSelection()]) ) )
                 return values
             else:
                 return None
@@ -233,30 +245,30 @@ class Interface ( wx.Frame ):
     def clearEntry(self, values):
         self.lblUnit1.SetLabelText(values[0])
         if len(values) == 3:
-            self.lblValue1.SetLabelText("Z") ; self.lblValue2.SetLabelText("E") ; self.lblValue3.SetLabelText("F")
+            self.lblValue1.SetLabelText("valor - Z") ; self.lblValue2.SetLabelText("Angulo - E") ; self.lblValue3.SetLabelText("Frecuencia - F")
             self.bxUnit2.Enable() ; self.lblUnit2.SetLabelText(values[1])
-            self.bxUnit3.Enable() ; self.lblUnit3.SetLabelText(values[2])
+            self.bxUnit3.Enable() ; self.frecuency.Enable()
         else:
             self.lblValue1.SetLabelText("Valor:") ; self.lblValue2.SetLabelText("") ; self.lblValue3.SetLabelText("")
             self.bxUnit2.Disable() ; self.lblUnit2.SetLabelText(u"N/A")
-            self.bxUnit3.Disable() ; self.lblUnit3.SetLabelText(u"N/A")
+            self.bxUnit3.Disable() ; self.frecuency.Disable() ; self.frecuency.SetSelection(0)
         pass
 
 
     # Virtual event handlers, override them in your derived class
     def OnBtnTlin(self, event):
         self.target = 'N'
-        self.clearEntry([u"Ω", u"", u"GHz"])
+        self.clearEntry([u"Ω", u"°", u"GHz"])
         event.Skip()
 
     def OnBtnTloc(self, event):
         self.target = 'O'
-        self.clearEntry([u"Ω", u"", u"GHz"])
+        self.clearEntry([u"Ω", u"°", u"GHz"])
         event.Skip()
 
     def OnBtnTlsc(self, event):
         self.target = 'G'
-        self.clearEntry([u"Ω", u"", u"GHz"])
+        self.clearEntry([u"Ω", u"°", u"GHz"])
         event.Skip()
 
     def OnBtnVoltaje( self, event ):
@@ -283,7 +295,15 @@ class Interface ( wx.Frame ):
         self.target = 'U'
         event.Skip()
 
-    def OnCalcular( self, event ):
+    def OnNetlist( self, event ):
+        self.pChart.printNetlist()
+        event.Skip()
+
+    def OnReset(self, event):
+        self.pChart.clean()
+        event.Skip()
+
+    def OnMatlab(self, event):
         event.Skip()
 
     def onCancel(self, event):

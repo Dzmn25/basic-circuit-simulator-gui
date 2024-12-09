@@ -1,7 +1,8 @@
 import schemdraw
 import schemdraw.elements as elm
 from schemdraw.segments import *
-import math
+import matplotlib
+matplotlib.use('Agg') 
 
 FILE_DIR = "./assets/component.png"
 
@@ -38,6 +39,7 @@ class Schematic:
         drawer.draw(show=False)
         drawer.save(FILE_DIR)
         del drawer
+        matplotlib.pyplot.close()
 
     def genComponent(self, component, id, horizontal):
         d = schemdraw.Drawing()
