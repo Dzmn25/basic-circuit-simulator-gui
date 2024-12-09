@@ -20,6 +20,7 @@ class Node:
         self.coords = (x, y)
         interface.data = self.coords
         self.interface = interface
+        self.id = None
         self.neighbors = {
             "up" : None,
             "down" : None,
@@ -27,6 +28,14 @@ class Node:
             "left" : None
         }
 
+class Component:
+    def __init__(self, origin, dest, dir, id, values, uiElement):
+        self.start = origin
+        self.end = dest
+        self.dir = dir
+        self.id = id
+        self.values = values
+        self.uiElement = uiElement
 
 class Board(wx.Panel):
     def __init__(self, parent):
@@ -39,6 +48,9 @@ class Board(wx.Panel):
         self.columnas = 4
         self.schematic = Schematic()
 
+        #IDS
+        self.nodeId = 0
+
         # BANDERAS
         self.selected = None
         self.horizontal = True
@@ -50,6 +62,7 @@ class Board(wx.Panel):
         self.occupied = []
         self.components = []
         self.matrix = []
+        self.availables = []
 
         # EVENTOS
         self.Bind(wx.EVT_PAINT, self.onDraw)
@@ -74,39 +87,60 @@ class Board(wx.Panel):
             matrix.append(fila)
         return matrix
     
+    def initSource(self):
+        self.inverted = True
+        self.horizontal = False
+        id = self.schematic.genImg("V", self.horizontal)
+        if id != None:
+            ori = (self.filas - 1, 0) ; dest = (self.filas - 2, 0)
+            self.lockOptions(ori, dest)
+            pos = self.matrix[ori[0]][ori[1]].interface.GetPosition()
+            self.newComponent( COMPONENT, ori, dest, pos, id)
+            self.setNodeId(ori, dest)
+
+    def initGround(self):
+        id = self.schematic.genImg("T", self.horizontal)
+        if id != None:
+            for i in range(self.columnas - 1):
+                ori = (self.filas - 1, i) ; dest = (self.filas - 1, i+1)
+                self.lockOptions(ori, dest)
+                pos = self.matrix[ori[0]][ori[1]].interface.GetPosition()
+                self.newComponent( COMPONENT, ori, dest, pos, id)
+                self.setNodeId(ori, dest, "T")
+    
     def onDraw(self, event):
         if len(self.matrix) == 0:
             xsize, ysize = self.GetSize()
             self.cellWidth = int ( xsize / (self.columnas + 1) )
             self.cellHeight = int ( ysize / (self.filas + 1) )
             self.matrix = self.initMatrix()
+            self.initSource()
+            self.initGround()
         event.Skip()
 
     def Cancel(self):
         if self.selected != None:
             self.resetOptions()
 
-    
-    def genImgComponent(self):
-        component = self.GetParent().getTarget()
-        id = None
-        if component == 'O':
-            id = self.schematic.genTLOC(self.horizontal)
-        elif component == 'N':
-            id = self.schematic.genTLIN(self.horizontal)
-        elif component == 'G':
-            id = self.schematic.genTLSC(self.horizontal)
-        elif component == 'R':
-            id = self.schematic.genResistor(self.horizontal)
-        elif component == 'V':
-            id = self.schematic.genSource(self.horizontal)
-        elif component == 'L':
-            id = self.schematic.genInductor(self.horizontal)
-        elif component == 'C':
-            id = self.schematic.genCapacitor(self.horizontal)
-        elif component == 'U':
-            id = self.schematic.genConector(self.horizontal)
-        return id
+    def addAvailable(self, ori, dest):
+        if not ori in self.availables:
+            self.availables.append(ori)
+        if not dest in self.availables:
+            self.availables.append(dest)
+
+
+    def loadComponent(self, button, m_pos):
+        target =  self.GetParent().getTarget()
+        if m_pos[0] < self.selected.coords[0] or m_pos[1] < self.selected.coords[1]:
+            self.inverted = True
+        if self.selected.coords[0] != m_pos[0]:
+            self.horizontal = False
+        self.lockOptions(button.data, self.selected.coords)
+        id = self.schematic.genImg( target, self.horizontal )
+        if id != None:
+            self.newComponent( COMPONENT, self.selected.coords, m_pos , self.selected.interface.GetPosition(), id)
+            self.setNodeId(self.selected.coords, m_pos)
+        self.resetOptions()
     
     def componentAttrs(self, coords):
         pos_x, pos_y = coords
@@ -131,7 +165,7 @@ class Board(wx.Panel):
             self.horizontal = True
         return ((pos_x, pos_y), (scale_x, scale_y) )
 
-    def loadComponent(self, schematic, origin, dest, coords, id):
+    def newComponent(self, schematic, origin, dest, coords, id):
         img = wx.Image(schematic)
         dir = "right" if self.inverted == False else "left"
         if self.horizontal == False:
@@ -141,18 +175,14 @@ class Board(wx.Panel):
         if self.special:
             img = img.Scale(scale[0], scale[1], wx.IMAGE_QUALITY_NORMAL)
             self.special = False
-        component = wx.StaticBitmap(self, wx.ID_ANY, wx.Bitmap(img), wx.Point(pos), scale, style=0)
-        component.Bind(wx.EVT_LEAVE_WINDOW, self.closeComponent)
-        component.Bind(wx.EVT_ENTER_WINDOW, self.openComponent)
-        component.Bind(wx.EVT_LEFT_DOWN, self.leftCliComponent)
-        component.Bind(wx.EVT_RIGHT_DOWN, self.rightCliComponent)
-        component.start = origin
-        component.end = dest
-        component.dir = dir
-        component.id = id
-        component.values = self.GetParent().getValues()
-        component.aux = len(self.components)
+        uiComponent = wx.StaticBitmap(self, wx.ID_ANY, wx.Bitmap(img), wx.Point(pos), scale, style=0)
+        uiComponent.Bind(wx.EVT_LEAVE_WINDOW, self.closeComponent)
+        uiComponent.Bind(wx.EVT_ENTER_WINDOW, self.openComponent)
+        uiComponent.Bind(wx.EVT_LEFT_DOWN, self.leftCliComponent)
+        uiComponent.index = len(self.components) 
+        component = Component(origin, dest, dir, id, self.GetParent().getValues(), uiComponent)
         self.components.append(component)
+        self.addAvailable(origin, dest)
         self.GetParent().updateGrid(self.components)
 
     def closeComponent(self, event):
@@ -167,13 +197,16 @@ class Board(wx.Panel):
 
     def leftCliComponent(self, event):
         # EDITAR
-        component = event.GetEventObject()
+        uiElement = event.GetEventObject()
+        component = self.components[uiElement.index]
         if self.GetParent().getTarget() == component.id[0]:
             component.values = self.GetParent().getValues()
             self.GetParent().updateGrid(self.components)
 
+    """
+    # ELIMINAR 
+    NO ES VIABLE ELIMINAR COMPONENTES, ES MEJOR REINICIAR LA INTERFAZ
     def rightCliComponent(self, event):
-        # ELIMINAR
         if self.selected == None:
             component = event.GetEventObject()
             x,y = component.start ; dir = component.dir
@@ -184,6 +217,7 @@ class Board(wx.Panel):
             self.components.pop(component.aux)
             component.Destroy()
             self.GetParent().updateGrid(self.components)
+    """
 
     def getOpposite(self, dir):
         return OPPOSITE[dir]
@@ -263,21 +297,23 @@ class Board(wx.Panel):
 
     def openInterface(self, event):
         interface = event.GetEventObject()
-        if self.selected == None:
-            self.setBitmap(interface, SELECTED)  
-        else:
-            m_pos = interface.data
-            if m_pos in self.options:
+        if interface.data in self.availables or interface.data in self.options:
+            if self.selected == None:
                 self.setBitmap(interface, SELECTED)  
+            else:
+                m_pos = interface.data
+                if m_pos in self.options:
+                    self.setBitmap(interface, SELECTED)  
 
     def closeInterface(self, event):
         interface = event.GetEventObject()
-        if self.selected == None:
-            self.setBitmap(interface, NORMAL)
-        else:
-            m_pos = interface.data
-            if m_pos in self.options:
-                self.setBitmap(interface, OPTION) 
+        if interface.data in self.availables or interface.data in self.options:
+            if self.selected == None:
+                self.setBitmap(interface, NORMAL)
+            else:
+                m_pos = interface.data
+                if m_pos in self.options:
+                    self.setBitmap(interface, OPTION) 
 
     def validateInterface(self, coords):
         x,y = coords
@@ -286,23 +322,33 @@ class Board(wx.Panel):
 
     def clicInterface(self, event):
         interface = event.GetEventObject()
-        m_pos = interface.data
-        if not self.validateInterface(m_pos):
-            return
-        if self.selected == None:
-            self.loadOptions(m_pos)
-            self.selected = self.matrix[m_pos[0]][m_pos[1]]
-        elif m_pos in self.options:
-            if m_pos[0] < self.selected.coords[0] or m_pos[1] < self.selected.coords[1]:
-                self.inverted = True
-            if self.selected.coords[0] != m_pos[0]:
-                self.horizontal = False
-            self.lockOptions(interface.data, self.selected.coords)
-            id = self.genImgComponent()
-            if id != None:
-                self.loadComponent( COMPONENT, self.selected.coords, m_pos , self.selected.interface.GetPosition(), id)
-            self.resetOptions()
+        if interface.data in self.availables or interface.data in self.options:
+            m_pos = interface.data
+            if not self.validateInterface(m_pos):
+                return
+            if self.selected == None:
+                self.loadOptions(m_pos)
+                self.selected = self.matrix[m_pos[0]][m_pos[1]]
+            elif m_pos in self.options:
+                if self.GetParent().getTarget() != "V":
+                    self.loadComponent(interface, m_pos)
         event.Skip()
+
+    def setNodeId(self, origin, dest, manual=None):
+        if self.matrix[origin[0]][origin[1]].id == None:
+            self.manageNodeId(origin)
+            self.manageNodeId(dest)
+        elif self.matrix[dest[0]][dest[1]].id == None:
+            if self.GetParent().getTarget() == "U" or manual != None:
+                self.matrix[dest[0]][dest[1]].id = self.matrix[origin[0]][origin[1]].id
+            else:
+                self.manageNodeId(dest)
+
+    def manageNodeId(self, coords):
+        x, y = coords
+        self.matrix[x][y].id = self.nodeId
+        self.nodeId += 1
+
 
     def scaleImage(self, dir):
         img = wx.Image(dir)

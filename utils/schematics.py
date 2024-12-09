@@ -83,10 +83,37 @@ class Schematic:
         id = self.getId(TLSC)
         return id if self.iSaved(elm.Line().color("orange"), id, horizontal) else None
     
-    def genConector(self, horizontal=True):
+    def genGround(self, horizontal=True):
         id = " "
+        return id if self.iSaved(elm.Line().color("brown"), id, horizontal) else None
+    
+    def genConector(self, horizontal=True):
+        id = "     "
         return id if self.iSaved(elm.Line(), id, horizontal) else None
 
+    def genImg(self, component, horizontal):
+        id = None
+        if component == 'O':
+            id = self.genTLOC(horizontal)
+        elif component == 'N':
+            id = self.genTLIN(horizontal)
+        elif component == 'G':
+            id = self.genTLSC(horizontal)
+        elif component == 'R':
+            id = self.genResistor(horizontal)
+        elif component == 'V':
+            id = self.genSource(horizontal)
+        elif component == 'L':
+            id = self.genInductor(horizontal)
+        elif component == 'C':
+            id = self.genCapacitor(horizontal)
+        elif component == 'U':
+            self.genConector(horizontal)
+            id = " "
+        elif component == 'T':
+            self.genGround(horizontal)
+            id = " "
+        return id
 
 
 """gen = Schematic()
