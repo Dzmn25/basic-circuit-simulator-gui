@@ -3,7 +3,6 @@
 import wx
 import wx.xrc
 import wx.grid
-from wx.lib.intctrl import IntCtrl
 from gui.board import Board
 
 ###########################################################################
@@ -61,7 +60,7 @@ class Interface ( wx.Frame ):
 
         bForm1 = wx.BoxSizer( wx.HORIZONTAL )
 
-        self.bxUnit1 = IntCtrl( self, wx.ID_ANY, 1, wx.DefaultPosition, wx.DefaultSize, 0 , min = 1)
+        self.bxUnit1 = wx.TextCtrl( self, wx.ID_ANY, u"1", wx.DefaultPosition, wx.DefaultSize, 0)
         bForm1.Add( self.bxUnit1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
         self.lblUnit1 = wx.StaticText( self, wx.ID_ANY, u"v", wx.DefaultPosition, wx.DefaultSize, 0 )
@@ -79,7 +78,7 @@ class Interface ( wx.Frame ):
 
         bForm2 = wx.BoxSizer( wx.HORIZONTAL )
 
-        self.bxUnit2 = IntCtrl( self, wx.ID_ANY, 1, wx.DefaultPosition, wx.DefaultSize, 0 , min = 1)
+        self.bxUnit2 = wx.TextCtrl( self, wx.ID_ANY, u"1", wx.DefaultPosition, wx.DefaultSize, 0)
         self.bxUnit2.Disable()
         bForm2.Add( self.bxUnit2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
@@ -98,7 +97,7 @@ class Interface ( wx.Frame ):
 
         bForm3 = wx.BoxSizer( wx.HORIZONTAL )
 
-        self.bxUnit3 = IntCtrl( self, wx.ID_ANY, 1, wx.DefaultPosition, wx.DefaultSize, 0, min = 1 )
+        self.bxUnit3 = wx.TextCtrl( self, wx.ID_ANY, u"1", wx.DefaultPosition, wx.DefaultSize, 0)
         self.bxUnit3.Disable()
         bForm3.Add( self.bxUnit3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
@@ -211,18 +210,13 @@ class Interface ( wx.Frame ):
         frecuencyChoices = [ u"KHz", u"MHz", u"GHz" ]
         values = []
         if self.getTarget() == 'N' or self.getTarget() == 'G' or self.getTarget() == 'O':
-            if self.bxUnit1.IsInBounds() and self.bxUnit2.IsInBounds() and self.bxUnit3.IsInBounds():
-                values.append( ( int( self.bxUnit1.GetValue() ) , self.lblUnit1.GetLabelText() ) )
-                values.append( ( int( self.bxUnit2.GetValue() ) , self.lblUnit2.GetLabelText() ) )
-                values.append( ( int( self.bxUnit3.GetValue() ) , str(frecuencyChoices[self.frecuency.GetSelection()]) ) )
-                return values
-            else:
-                return None
+            values.append( ( float( self.bxUnit1.GetValue() ) , self.lblUnit1.GetLabelText() ) )
+            values.append( ( float( self.bxUnit2.GetValue() ) , self.lblUnit2.GetLabelText() ) )
+            values.append( ( float( self.bxUnit3.GetValue() ) , str(frecuencyChoices[self.frecuency.GetSelection()]) ) )
+            return values
         else:
-            if self.bxUnit1.IsInBounds():
-                values.append( ( int( self.bxUnit1.GetValue() ) , self.lblUnit1.GetLabelText() ) )
-                return values
-        return None
+            values.append( ( float( self.bxUnit1.GetValue() ) , self.lblUnit1.GetLabelText() ) )
+            return values
     
     def addComponent(self, id, values, pos):
         if len(values) == 1:
